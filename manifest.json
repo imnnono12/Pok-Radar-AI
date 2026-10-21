@@ -1,0 +1,21 @@
+
+{
+  "id": "./",
+  "name": "Poké Radar AI",
+  "short_name": "Poké Radar",
+  "description": "Pokémon nearby companion dashboard",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#11131b",
+  "theme_color": "#171923",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

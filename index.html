@@ -1,0 +1,539 @@
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171923">
+  <meta name="description" content="Pokémon nearby companion dashboard">
+  <title>Poké Radar AI</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #11131b;
+      --panel: #1b1e2b;
+      --border: #303448;
+      --text: #f5f6ff;
+      --muted: #a5abc2;
+      --green: #78e2b5;
+      --red: #ff8e99;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px system-ui, sans-serif;
+    }
+
+    main {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px 16px 40px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 17px;
+      background: #282d40;
+      font-size: 29px;
+    }
+
+    h1 { font-size: 23px; margin: 0; }
+    h2 { font-size: 17px; margin: 0 0 14px; }
+    p { line-height: 1.5; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+
+    .panel {
+      padding: 17px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      margin-bottom: 15px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 15px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 25px;
+      margin-top: 6px;
+    }
+
+    button, input {
+      font: inherit;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      background: var(--green);
+      color: #10251d;
+      font-weight: 700;
+    }
+
+    button.secondary {
+      background: #30364a;
+      color: white;
+    }
+
+    button.danger {
+      background: #472932;
+      color: #ffc5cb;
+    }
+
+    input {
+      width: 100%;
+      background: #11131b;
+      color: white;
+      border: 1px solid var(--border);
+      margin: 6px 0 13px;
+    }
+
+    label { font-size: 13px; color: var(--muted); }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .actions button { flex: 1; }
+
+    .status {
+      padding: 11px;
+      background: #252a3b;
+      border-radius: 10px;
+      margin-top: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .record {
+      border-top: 1px solid var(--border);
+      padding: 13px 0;
+    }
+
+    .record:first-child { border-top: 0; }
+
+    .record-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .record strong { font-size: 16px; }
+    .record p { margin: 5px 0; }
+
+    .pill {
+      display: inline-block;
+      background: #293d36;
+      color: var(--green);
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+    }
+
+    .warning {
+      color: #ffd59b;
+      background: #392e20;
+      padding: 11px;
+      border-radius: 10px;
+      line-height: 1.5;
+    }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 10px 2px;
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <header>
+    <div class="logo">🔴</div>
+    <div>
+      <h1>Poké Radar AI</h1>
+      <div class="muted small">Pokémon Nearby Companion</div>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>📍 Lokasi kau</h2>
+    <div id="locationStatus" class="muted">
+      Lokasi belum diperiksa.
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button id="locateBtn">Dapatkan lokasi GPS</button>
+    </div>
+    <div id="locationDetails" class="status small">
+      Benarkan akses lokasi apabila diminta.
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <span class="muted small">Rekod Pokémon</span>
+      <strong id="totalCount">0</strong>
+    </div>
+    <div class="stat">
+      <span class="muted small">Laporan 1 jam terkini</span>
+      <strong id="recentCount">0</strong>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>➕ Tambah laporan Pokémon</h2>
+    <p class="muted small">
+      Gunakan lokasi GPS semasa ketika melihat Pokémon.
+      Rekod ini bukan pengesanan automatik.
+    </p>
+
+    <form id="reportForm">
+      <label for="pokemonName">Nama Pokémon</label>
+      <input id="pokemonName" required maxlength="60"
+        placeholder="Contoh: Pikachu">
+
+      <label for="reportNote">Nota (pilihan)</label>
+      <input id="reportNote" maxlength="120"
+        placeholder="Contoh: Berdekatan PokéStop">
+
+      <button type="submit" style="width:100%">
+        Simpan laporan
+      </button>
+    </form>
+    <div id="formStatus" class="muted small"
+      style="margin-top:10px"></div>
+  </section>
+
+  <section class="panel">
+    <h2>🔎 Pokémon sekitar</h2>
+    <label for="searchInput">Cari Pokémon</label>
+    <input id="searchInput" placeholder="Taip nama Pokémon...">
+
+    <div class="actions">
+      <button id="refreshBtn" class="secondary">
+        Kira semula jarak
+      </button>
+      <button id="exportBtn" class="secondary">
+        Eksport data
+      </button>
+    </div>
+
+    <div id="records" style="margin-top:12px"></div>
+  </section>
+
+  <section class="warning small">
+    ⚠️ Data di sini ialah laporan manual, bukan spawn live
+    yang disahkan oleh Pokémon GO. Rekod lama mungkin sudah
+    tidak tepat. Lokasi disimpan dalam browser pada peranti ini.
+  </section>
+
+  <footer>
+    Poké Radar AI · Prototype 1.0<br>
+    Tiada sambungan rasmi kepada server Pokémon GO.
+  </footer>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const STORAGE_KEY = "pokeRadarReportsV1";
+  const MAX_AGE = 60 * 60 * 1000;
+
+  let position = null;
+  let reports = [];
+
+  try {
+    reports = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(reports)) reports = [];
+  } catch {
+    reports = [];
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+  }
+
+  function distanceKm(a, b) {
+    const rad = d => d * Math.PI / 180;
+    const dLat = rad(b.lat - a.lat);
+    const dLon = rad(b.lon - a.lon);
+    const x = Math.sin(dLat / 2) ** 2 +
+      Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) *
+      Math.sin(dLon / 2) ** 2;
+
+    return 6371 * 2 * Math.atan2(
+      Math.sqrt(x), Math.sqrt(1 - x)
+    );
+  }
+
+  function timeLabel(timestamp) {
+    return new Date(timestamp).toLocaleString("ms-MY", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  }
+
+  function ageLabel(timestamp) {
+    const mins = Math.max(0, Math.floor(
+      (Date.now() - timestamp) / 60000
+    ));
+
+    if (mins < 1) return "Baru sahaja dilaporkan";
+    if (mins < 60) return `${mins} minit lalu`;
+
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} jam lalu`;
+
+    return `${Math.floor(hours / 24)} hari lalu`;
+  }
+
+  function getDistance(report) {
+    if (!position || !Number.isFinite(report.lat) ||
+        !Number.isFinite(report.lon)) return null;
+
+    return distanceKm(position, {
+      lat: report.lat, lon: report.lon
+    });
+  }
+
+  function render() {
+    const now = Date.now();
+    $("totalCount").textContent = reports.length;
+    $("recentCount").textContent = reports.filter(
+      r => now - r.time <= MAX_AGE && now >= r.time
+    ).length;
+
+    const query = $("searchInput").value.trim().toLowerCase();
+
+    const filtered = reports
+      .filter(r => r.name.toLowerCase().includes(query))
+      .sort((a, b) => b.time - a.time);
+
+    const root = $("records");
+    root.replaceChildren();
+
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = reports.length
+        ? "Tiada Pokémon sepadan dengan carian."
+        : "Belum ada laporan. Tambah laporan pertama di atas.";
+      root.append(empty);
+      return;
+    }
+
+    filtered.forEach(report => {
+      const record = document.createElement("div");
+      record.className = "record";
+
+      const top = document.createElement("div");
+      top.className = "record-top";
+
+      const details = document.createElement("div");
+      const name = document.createElement("strong");
+      name.textContent = "🔴 " + report.name;
+
+      const time = document.createElement("p");
+      time.className = "muted small";
+      time.textContent = timeLabel(report.time);
+
+      const age = document.createElement("span");
+      age.className = "pill";
+      age.textContent = ageLabel(report.time);
+
+      details.append(name, time, age);
+
+      const del = document.createElement("button");
+      del.className = "danger";
+      del.textContent = "Padam";
+      del.addEventListener("click", () => {
+        reports = reports.filter(r => r.id !== report.id);
+        save();
+        render();
+      });
+
+      top.append(details, del);
+      record.append(top);
+
+      const distance = getDistance(report);
+      const distLine = document.createElement("p");
+      distLine.className = "muted small";
+      distLine.textContent = distance === null
+        ? "Jarak belum tersedia — aktifkan GPS."
+        : distance < 1
+          ? `Anggaran jarak: ${Math.round(distance * 1000)} m`
+          : `Anggaran jarak: ${distance.toFixed(2)} km`;
+      record.append(distLine);
+
+      if (report.note) {
+        const note = document.createElement("p");
+        note.className = "muted small";
+        note.textContent = "Nota: " + report.note;
+        record.append(note);
+      }
+
+      if (Date.now() - report.time > MAX_AGE) {
+        const old = document.createElement("p");
+        old.className = "small";
+        old.style.color = "#ffd59b";
+        old.textContent =
+          "Laporan melebihi 1 jam — kemunculan tidak disahkan.";
+        record.append(old);
+      }
+
+      root.append(record);
+    });
+  }
+
+  function locate() {
+    if (!navigator.geolocation) {
+      $("locationStatus").textContent =
+        "Browser ini tidak menyokong GPS.";
+      return;
+    }
+
+    $("locateBtn").disabled = true;
+    $("locationStatus").textContent = "Mendapatkan lokasi...";
+    $("locationDetails").textContent =
+      "Sila benarkan akses lokasi pada browser.";
+
+    navigator.geolocation.getCurrentPosition(
+      result => {
+        position = {
+          lat: result.coords.latitude,
+          lon: result.coords.longitude
+        };
+
+        $("locationStatus").textContent =
+          "Lokasi berjaya diperoleh.";
+        $("locationDetails").textContent =
+          `Ketepatan GPS anggaran: ±${Math.round(
+            result.coords.accuracy
+          )} meter. Koordinat tidak dipaparkan.`;
+
+        $("locateBtn").disabled = false;
+        render();
+      },
+      error => {
+        const messages = {
+          1: "Akses lokasi ditolak. Semak kebenaran browser.",
+          2: "Lokasi tidak dapat ditentukan.",
+          3: "Masa mendapatkan lokasi tamat. Cuba lagi."
+        };
+
+        $("locationStatus").textContent =
+          messages[error.code] || "Gagal mendapatkan lokasi.";
+        $("locationDetails").textContent =
+          "Semak GPS dan tetapan kebenaran lokasi.";
+        $("locateBtn").disabled = false;
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 30000
+      }
+    );
+  }
+
+  $("locateBtn").addEventListener("click", locate);
+  $("refreshBtn").addEventListener("click", () => {
+    render();
+    if (!position) locate();
+  });
+
+  $("searchInput").addEventListener("input", render);
+
+  $("reportForm").addEventListener("submit", event => {
+    event.preventDefault();
+
+    if (!position) {
+      $("formStatus").textContent =
+        "Dapatkan lokasi GPS dahulu sebelum menyimpan laporan.";
+      locate();
+      return;
+    }
+
+    const name = $("pokemonName").value.trim();
+    if (!name) return;
+
+    reports.push({
+      id: (crypto.randomUUID
+        ? crypto.randomUUID()
+        : String(Date.now()) + Math.random()),
+      name,
+      note: $("reportNote").value.trim(),
+      lat: position.lat,
+      lon: position.lon,
+      time: Date.now()
+    });
+
+    save();
+    $("reportForm").reset();
+    $("formStatus").textContent =
+      "Laporan disimpan pada peranti ini.";
+    render();
+  });
+
+  $("exportBtn").addEventListener("click", () => {
+    const blob = new Blob(
+      [JSON.stringify(reports, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "poke-radar-reports.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
